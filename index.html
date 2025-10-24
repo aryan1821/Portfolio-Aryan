@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aryan Gupta - Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* Apply smooth scrolling for internal links */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Set the Inter font as default */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Darker background */
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden; /* Hide overflow to prevent scrollbars from the 3D canvas */
+        }
+
+        /* The 3D animation canvas will be rendered here by Three.js */
+        #creativeCanvas {
+            position: fixed; /* Use fixed positioning for the background */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all content */
+        }
+        
+        /* Container for all content to sit on top of the 3D animation */
+        #content-container {
+            position: relative;
+            z-index: 10;
+            overflow-y: auto; /* Enable vertical scrolling for the content */
+            height: 100vh;
+        }
+        
+        /* Keyframes for a gentle fade-in from the bottom */
+        @keyframes fadeInMoveUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInMoveUp 0.8s ease-out forwards;
+        }
+
+        /* Keyframes for a gentle fade-in from the top */
+        @keyframes fadeInMoveDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-down {
+            animation: fadeInMoveDown 0.8s ease-out forwards;
+        }
+
+        /* Custom styles for the 3D form container */
+        .form-3d-container {
+            position: relative;
+            background: rgba(17, 24, 39, 0.7); /* Dark semi-transparent background */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 20px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        /* Style for file input button */
+        input[type="file"]::file-selector-button {
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: #374151;
+            color: #d1d5db;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]::file-selector-button:hover {
+            background-color: #4b5563;
+            color: white;
+        }
+
+        /* Modal specific styles for project details */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background-color: #1a202c;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 960px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-overlay.open .modal-content {
+            transform: scale(1);
+        }
+
+        /* Styles for the new success popup */
+        .success-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000; /* Higher z-index to be on top of everything */
+        }
+        .success-popup-content {
+            background-color: #1a202c;
+            padding: 2.5rem 4rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            max-width: 600px;
+        }
+        
+        /* New styles for the like button */
+        .like-button {
+            transition: color 0.2s ease, transform 0.2s ease;
+            cursor: pointer;
+        }
+        .like-button:hover {
+            transform: scale(1.1);
+        }
+        .like-button.liked {
+            color: #ef4444; /* A bright red */
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="creativeCanvas"></canvas>
+
+    <div id="content-container">
+        <header class="fixed top-0 left-0 right-0 z-50 p-4">
+            <nav class="bg-gray-800 bg-opacity-80 backdrop-blur-md rounded-full shadow-lg max-w-6xl mx-auto py-2 px-6 flex justify-between items-center">
+                <a href="#" class="text-2xl font-bold text-teal-400">AG</a>
+                <div class="space-x-4 md:space-x-8">
+                    <a href="#home" class="text-gray-300 hover:text-white transition duration-300">Home</a>
+                    <a href="#about" class="text-gray-300 hover:text-white transition duration-300">About Us</a>
+                    <a href="#projects" class="text-gray-300 hover:text-white transition duration-300">Projects</a>
+                    <a href="#contact" class="text-gray-300 hover:text-white transition duration-300">Contact Us</a>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container mx-auto px-4 mt-24">
+            <section id="home" class="min-h-[calc(100vh-6rem)] flex flex-col justify-center items-center text-center p-8">
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-4 animate-fade-in-down">Hlo everyone, I'm <span class="text-teal-400">Aryan Gupta</span></h1>
+                <p class="text-lg md:text-xl text-gray-400 max-w-3xl mb-12 animate-fade-in-up">A passionate developer creating attractive, impressive, and effective designs for a variety of digital platforms.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl p-6 bg-gray-800 rounded-2xl shadow-xl animate-fade-in-up">
+                    <div class="text-center p-4">
+                        <div class="text-4xl md:text-5xl font-extrabold text-teal-400 mb-2" data-count="15">0</div>
+                        <p class="text-gray-300 text-sm md:text-base">Clients</p>
+                    </div>
+                    <div class="text-center p-4">
+                        <div class="text-4xl md:text-5xl font-extrabold text-purple-400 mb-2" data-count="20">0</div>
+                        <p class="text-gray-300 text-sm md:text-base">Projects</p>
+                    </div>
+                    <div class="text-center p-4">
+                        <div class="text-4xl md:text-5xl font-extrabold text-pink-400 mb-2" data-count="3">0</div>
+                        <p class="text-gray-300 text-sm md:text-base">Years of Experience</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="about" class="py-20 md:py-32">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-12">About Me</h2>
+                <div class="flex flex-col md:flex-row items-center gap-12 bg-gray-800 p-8 md:p-12 rounded-2xl shadow-xl">
+                    <div class="md:w-1/3 flex justify-center">
+                        <img src="Passport Size.jpg" alt="Aryan Gupta" class="rounded-full w-48 h-48 md:w-64 md:h-64 object-cover border-4 border-teal-400 shadow-lg">
+                    </div>
+                    <div class="md:w-2/3 space-y-6 text-gray-300">
+                        <p>Hello everyone, my name is Aryan Gupta. I live in Kanpur, Uttar Pradesh, and am currently pursuing my bachelor's degree at PSIT College of Higher Education. I completed my intermediate education in Delhi.</p>
+
+                        <p>I am passionate about creating attractive and effective designs, and my skills lie in designing, developing, and creating user interfaces. I am proficient in all aspects of the design and development process, from initial concept to final execution. I have experience as a graphic developer and web inventor, and I specialize in creating various front-end applications, including websites for e-commerce, booking platforms, travel, social media login pages, and clones of existing websites. Additionally, I have worked in a number of fields, including SMM, SEO, product design, graphic design, and video editing.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="skills" class="py-20 md:py-32">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-12">Skills & Services</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div class="p-8 bg-gray-800 rounded-2xl shadow-xl border border-transparent hover:border-teal-500 transition duration-300">
+                        <h3 class="text-2xl font-bold text-teal-400 mb-4">Web Design & Development</h3>
+                        <p class="text-gray-300 leading-relaxed">A proficient net clothier possesses a various skill set tailor-made to craft visually appealing and functional digital reports. Mastery in HTML, CSS, and JavaScript forms the foundation, considering the seamless integration of layout factors and interactivity. Proficiency in UI/UX standards permits the creation of intuitive consumer journeys, optimizing accessibility and engagement.</p>
+                    </div>
+                    <div class="p-8 bg-gray-800 rounded-2xl shadow-xl border border-transparent hover:border-purple-500 transition duration-300">
+                        <h3 class="text-2xl font-bold text-purple-400 mb-4">Graphic Design</h3>
+                        <p class="text-gray-300 leading-relaxed">As a photo dressmaker, your innovative prowess is your finest asset, however, coupling it with digital advertising and marketing abilities can extend your impact. By studying digital advertising, you may efficently exhibit your designs to the right target market and drive engagement.</p>
+                    </div>
+                    <div class="p-8 bg-gray-800 rounded-2xl shadow-xl border border-transparent hover:border-pink-500 transition duration-300">
+                        <h3 class="text-2xl font-bold text-pink-400 mb-4">SMM & SEO</h3>
+                        <p class="text-gray-300 leading-relaxed">Understanding search engine optimization standards facilitates making sure your paintings are discoverable, while proficiency in social media advertising enables you to leverage platforms for emblem exposure. With analytics knowledge, you could measure the impact of your designs and tailor strategies for maximum effectiveness.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="projects" class="py-20 md:py-32">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-12">My Projects</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="1">
+                        <img src="9CA3AF.jpg" alt="E-commerce Website Project" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-teal-400 mb-2">E-commerce Website</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">A fully responsive e-commerce platform with a clean user interface, secure payment gateway, and a seamless shopping experience.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="2">
+                        <img src="9CA3AG.jpg" alt="Booking Platform Project" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-purple-400 mb-2">Travel Booking App</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">A modern travel booking platform designed for efficiency and user-friendliness, allowing users to easily find and book flights and accommodations.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="3">
+                        <img src="9CA3AH.jpg" alt="Visual Marketing" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-pink-400 mb-2">Visual Marketing</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">A creative set of social media posters — the left promoting ESSDEE Goa Tour & Conference with vibrant 3D visuals, and the right showcasing Burger Hub with appetizing design and strong call-to-action elements.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="4">
+                        <img src="9CA3AI.jpg" alt="Creative Logo Design" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-teal-400 mb-2">Creative Logo Design</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">creative collection of logo designs crafted to reflect unique brand identities — from food and beverage to lifestyle and automotive sectors, combining bold visuals with meaningful concepts.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="5">
+                        <img src="9CA3AJ.jpg" alt="Crafting Innovative" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-purple-400 mb-2">User-Centric Product Experiences</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">I design intuitive and engaging products that blend creativity with functionality to enhance user experiences.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="5">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="6">
+                        <img src="9CA3AK.jpg" alt="Showcasing Creativity" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-pink-400 mb-2">Showcasing Creativity</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">Empowering the future with cutting-edge robotics, AI innovations, and smart technology solutions.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="7">
+                        <img src="9CA3AL.jpg" alt="InnoVistaar Website Project" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-teal-400 mb-2">Business Ai  Website</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">A vibrant and motivating website for a local gym, featuring class schedules, trainer profiles, and membership sign-up forms.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="7">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="8">
+                        <img src="9CA3AM.jpg" alt="Photography Portfolio Project" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-purple-400 mb-2">Photography Portfolio</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">A minimalist and elegant portfolio site for a photographer, designed to highlight high-resolution images with a smooth gallery.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="8">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="9">
+                        <img src="9CA3AN.jpg" alt="AirLine Website" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-pink-400 mb-2">Xplore AirLine Website</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">Designing seamless and visually captivating airline experiences that make every journey effortless and memorable.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="9">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="10">
+                        <img src="9CA3AO.jpg" alt="From Tours to Grand Openings" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-teal-400 mb-2">From Tours to Grand Openings</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">From tours to grand openings, I design visually striking posters that capture the spirit of every event and connect brands with their audience.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="11">
+                        <img src="9CA3AP.jpg" alt="Portfolio Apk ui-ux Design" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-purple-400 mb-2">Portfolio Apk ui-ux Design</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">Designed an intuitive and visually engaging app interface focused on seamless user experience, modern aesthetics, and functional flow.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="11">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-card bg-gray-800 rounded-2xl overflow-hidden shadow-xl transform hover:scale-105 transition duration-300 cursor-pointer" data-project-id="12">
+                        <img src="9CA3AQ.jpg" alt="Video Edit/Ad/Promotion Project" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-pink-400 mb-2">Video Edit/Ad/Promotion</h3>
+                            <p class="text-gray-300 text-sm leading-relaxed">Created engaging promotional videos and ad edits that effectively communicate brand stories, drive audience attention, and boost engagement.</p>
+                            <div class="flex items-center gap-2 mt-4 text-gray-400">
+                                <button class="like-button focus:outline-none" data-liked="false" data-project-id="12">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                    </svg>
+                                </button>
+                                <span class="like-count text-sm" data-count="0">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="contact" class="py-20 md:py-32">
+                <h2 class="text-4xl md:text-5xl font-bold text-center mb-16">Get in Touch</h2>
+                <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                    
+                    <div class="w-full h-full min-h-[450px] lg:min-h-full">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m13!1m11!1m3!1d205!2d80.3388391!3d26.3949763!2m2!1f130.72!2f45!3m2!1i1024!2i768!4f35!5e1!3m2!1sen!2sin!4v1759826511600!5m2!1sen!2sin" width="100%" height="100%" style="border: 1px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+                            class="rounded-3xl shadow-xl border border-gray-700">
+                        </iframe>
+                    </div>
+
+                    <div class="form-3d-container p-8 md:p-12">
+                        <form class="form-content relative space-y-6">
+                            <div class="flex flex-col md:flex-row gap-6">
+                                <div class="flex-1">
+                                    <label for="name" class="block text-gray-300 mb-2">Name</label>
+                                    <input type="text" id="name" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Your Name">
+                                </div>
+                                <div class="flex-1">
+                                    <label for="email" class="block text-gray-300 mb-2">Email</label>
+                                    <input type="email" id="email" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="your.email@example.com">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="location" class="block text-gray-300 mb-2">Your Location</label>
+                                <input type="text" id="location" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="City, Country">
+                            </div>
+                            <div>
+                                <label for="services" class="block text-gray-300 mb-2">Services Needed</label>
+                                <select id="services" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                                    <option value="">Select a service...</option>
+                                    <option value="web-design">Web Design & Development</option>
+                                    <option value="graphic-design">Graphic Design</option>
+                                    <option value="smm">SMM (Social Media Marketing)</option>
+                                    <option value="seo">SEO (Search Engine Optimization)</option>
+                                    <option value="ui-ux">UI/UX Consulting</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="document" class="block text-gray-300 mb-2">Upload a Document (Optional)</label>
+                                <input type="file" id="document" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            </div>
+                            <div>
+                                <label for="message" class="block text-gray-300 mb-2">Message</label>
+                                <textarea id="message" rows="5" class="w-full p-3 bg-gray-700 rounded-xl border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Tell me about your project..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-4 rounded-xl shadow-lg transition duration-300">Send Message</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+             </main>
+
+        <footer class="bg-gray-900 py-8 text-center text-gray-500">
+            <div class="flex justify-center space-x-6 mb-6">
+                <a href="https://www.instagram.com/______aryan07______/" class="text-gray-400 hover:text-white transition transform hover:scale-110" aria-label="Instagram" target="_blank">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.069-1.645-.069-4.85s.011-3.584.069-4.85c.149-3.225 1.664-4.771 4.919-4.919 1.266-.058 1.644-.07 4.85-.07zm0-2.163c-3.259 0-3.667.014-4.947.072-4.258.194-6.321 2.242-6.515 6.515-.058 1.28-.072 1.688-.072 4.947s.014 3.667.072 4.947c.194 4.273 2.257 6.321 6.515 6.515 1.28.058 1.688.072 4.947.072s3.667-.014 4.947-.072c4.258-.194 6.321-2.242 6.515-6.515.058-1.28.072-1.688.072-4.947s-.014-3.667-.072-4.947c-.194-4.273-2.257-6.321-6.515-6.515-1.28-.058-1.688-.072-4.947-.072zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/>
+                    </svg>
+                </a>
+                <a href="https://www.facebook.com/share/16XMaWcoBg/" class="text-gray-400 hover:text-white transition transform hover:scale-110" aria-label="Facebook" target="_blank">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385h-3.038v-3.47h3.038v-2.636c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.49 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385c5.737-.9 10.125-5.864 10.125-11.854z"/>
+                    </svg>
+                </a>
+            </div>
+            <p>&copy; 2023 Aryan Gupta. All rights reserved.</p>
+        </footer>
+        <div id="project-modal" class="modal-overlay">
+            <div class="modal-content p-6">
+                <div class="flex justify-between items-center pb-4 border-b border-gray-700">
+                    <h2 id="modal-title" class="text-3xl font-bold text-teal-400">Project Title</h2>
+                    <button id="modal-close-btn" class="text-gray-400 hover:text-white text-3xl font-bold">&times;</button>
+                </div>
+                <div class="py-6 space-y-4">
+                    <p id="modal-description" class="text-gray-300"></p>
+                    <div id="modal-images" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-modal" class="success-popup">
+        <div class="success-popup-content">
+            <h2 id="success-message" class="text-4xl font-bold text-white mb-2 animate__animated"></h2>
+            <p class="text-gray-300">Thank you for your message! I'll get back to you soon.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 3D Background Animation Logic ---
+        window.onload = function() {
+            const canvas = document.getElementById('creativeCanvas');
+            let scene, camera, renderer, particles;
+            let mouse = new THREE.Vector2();
+            let raycaster = new THREE.Raycaster();
+            let isDrawing = false;
+            
+            // Set up the scene, camera, and renderer
+            function init() {
+                scene = new THREE.Scene();
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 100;
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                document.addEventListener('mousemove', onDocumentMouseMove, false);
+                document.addEventListener('mousedown', onDocumentMouseDown, false);
+                document.addEventListener('mouseup', onDocumentMouseUp, false);
+                window.addEventListener('resize', onWindowResize, false);
+                
+                // Define a color palette for the particles
+                const colors = [
+                    new THREE.Color(0x6ee7b7), // Teal
+                    new THREE.Color(0xa78bfa), // Purple
+                    new THREE.Color(0xf472b6), // Pink
+                    new THREE.Color(0xfde047), // Yellow
+                    new THREE.Color(0x38bdf8), // Light Blue
+                ];
+
+                const geometry = new THREE.BufferGeometry();
+                const particleCount = 20000;
+                const positions = new Float32Array(particleCount * 3);
+                const particleColors = new Float32Array(particleCount * 3);
+                const sizes = new Float32Array(particleCount);
+
+                const sphereRadius = 250;
+                for (let i = 0; i < particleCount; i++) {
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const theta = Math.random() * 2 * Math.PI;
+                    const x = sphereRadius * Math.sin(phi) * Math.cos(theta);
+                    const y = sphereRadius * Math.sin(phi) * Math.sin(theta);
+                    const z = sphereRadius * Math.cos(phi);
+
+                    positions[i * 3 + 0] = x;
+                    positions[i * 3 + 1] = y;
+                    positions[i * 3 + 2] = z;
+
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    particleColors[i * 3 + 0] = color.r;
+                    particleColors[i * 3 + 1] = color.g;
+                    particleColors[i * 3 + 2] = color.b;
+
+                    sizes[i] = Math.random() * 3 + 1;
+                }
+
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(particleColors, 3));
+                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        color: { value: new THREE.Color(0xffffff) },
+                        pointTexture: { value: new THREE.TextureLoader().load( "https://threejs.org/examples/textures/sprites/spark1.png" ) }
+                    },
+                    vertexShader: `
+                        attribute float size;
+                        attribute vec3 color;
+                        varying vec3 vColor;
+                        void main() {
+                            vColor = color;
+                            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                            gl_PointSize = size * (300.0 / -mvPosition.z);
+                            gl_Position = projectionMatrix * mvPosition;
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform vec3 color;
+                        uniform sampler2D pointTexture;
+                        varying vec3 vColor;
+                        void main() {
+                            gl_FragColor = vec4(vColor, 1.0) * texture2D(pointTexture, gl_PointCoord);
+                        }
+                    `,
+                    blending: THREE.AdditiveBlending,
+                    depthTest: false,
+                    transparent: true
+                });
+
+                particles = new THREE.Points(geometry, material);
+                scene.add(particles);
+
+                animate();
+            }
+
+            // Update mouse position for interactions
+            function onDocumentMouseMove(event) {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            }
+
+            // Start "drawing" when the mouse is down
+            function onDocumentMouseDown() {
+                isDrawing = true;
+            }
+
+            // Stop "drawing" when the mouse is up
+            function onDocumentMouseUp() {
+                isDrawing = false;
+            }
+
+            // Handle window resizing
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+
+            // The main animation loop
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // Rotate the particle system slightly
+                particles.rotation.x += 0.0001;
+                particles.rotation.y += 0.0002;
+
+                const positions = particles.geometry.attributes.position.array;
+                const particleCount = positions.length / 3;
+
+                // Update raycaster with mouse position
+                raycaster.setFromCamera(mouse, camera);
+
+                // Get a list of particles intersecting with the ray
+                const intersects = raycaster.intersectObject(particles);
+                
+                // Interact with particles
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    const x = positions[i3];
+                    const y = positions[i3 + 1];
+                    const z = positions[i3 + 2];
+
+                    // Gentle random movement for a living effect
+                    positions[i3 + 0] += Math.sin(Date.now() * 0.0001 + i) * 0.005;
+                    positions[i3 + 1] += Math.cos(Date.now() * 0.0001 + i) * 0.005;
+
+                    // "Graphics pen" effect: particles react to the mouse cursor
+                    if (isDrawing && intersects.length > 0) {
+                        const mousePoint = intersects[0].point;
+                        const dist = Math.sqrt(
+                            Math.pow(x - mousePoint.x, 2) +
+                            Math.pow(y - mousePoint.y, 2) +
+                            Math.pow(z - mousePoint.z, 2)
+                        );
+                        
+                        // If a particle is close to the mouse, apply a strong pull or push
+                        if (dist < 50) {
+                            const force = (50 - dist) / 50 * 0.01;
+                            positions[i3 + 0] -= (x - mousePoint.x) * force;
+                            positions[i3 + 1] -= (y - mousePoint.y) * force;
+                            positions[i3 + 2] -= (z - mousePoint.z) * force;
+                        }
+                    } else if (!isDrawing) {
+                        // When not drawing, the particles can have a more subtle mouse interaction
+                        const mousePos = new THREE.Vector3(mouse.x * 100, mouse.y * 100, camera.position.z);
+                        const dist = Math.sqrt(
+                            Math.pow(x - mousePos.x, 2) +
+                            Math.pow(y - mousePos.y, 2) +
+                            Math.pow(z - mousePos.y, 2)
+                        );
+                        if (dist < 100) {
+                            const force = (100 - dist) / 100 * 0.005;
+                            positions[i3 + 0] += (x - mousePos.x) * force;
+                            positions[i3 + 1] += (y - mousePos.y) * force;
+                        }
+                    }
+                }
+
+                particles.geometry.attributes.position.needsUpdate = true;
+                renderer.render(scene, camera);
+            }
+            init();
+
+            // --- Other JavaScript Logic (from previous version) ---
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Live Counter Animation
+            const counters = document.querySelectorAll('[data-count]');
+            const counterSection = document.getElementById('home');
+            let isCounterAnimated = false;
+
+            const animateCounter = (el) => {
+                const end = parseInt(el.dataset.count, 10);
+                let current = 0;
+                const increment = end / 200; // Adjust speed
+
+                const timer = setInterval(() => {
+                    current += increment;
+                    el.textContent = Math.floor(current);
+                    if (current >= end) {
+                        el.textContent = end + '+'; // Add a plus sign at the end
+                        clearInterval(timer);
+                    }
+                }, 1);
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !isCounterAnimated) {
+                        counters.forEach(animateCounter);
+                        isCounterAnimated = true;
+                    }
+                });
+            }, {
+                threshold: 0.5
+            });
+
+            observer.observe(counterSection);
+
+            // Project Data (customize this with your own project info!)
+            const projectsData = [
+                {
+                    id: "1",
+                    title: "E-commerce Website",
+                    description: "A fully responsive e-commerce platform with a clean user interface, secure payment gateway, and a seamless shopping experience. It features product filtering, a shopping cart, and a user dashboard.",
+                    images: [
+                        "1A.jpg",
+                        "1B.jpg",
+                        "1C.jpg"
+                    ]
+                },
+                {
+                    id: "2",
+                    title: "Travel Booking App",
+                    description: "A modern travel booking platform designed for efficiency and user-friendliness, allowing users to easily find and book flights and accommodations. The app includes real-time pricing and user reviews.",
+                    images: [
+                        "1D.jpg",
+                        "1E.jpg",
+                        "1F.jpg"
+                    ]
+                },
+                {
+                    id: "3",
+                    title: "Visual Marketing",
+                    description: "A creative set of social media posters — the left promoting ESSDEE Goa Tour & Conference with vibrant 3D visuals, and the right showcasing Burger Hub with appetizing design and strong call-to-action elements.",
+                    images: [
+                        "1G.jpg",
+                        "1H.jpg",
+                        "1I.jpg"
+                    ]
+                },
+                {
+                    id: "4",
+                    title: "Creative Logo Design",
+                    description: "creative collection of logo designs crafted to reflect unique brand identities — from food and beverage to lifestyle and automotive sectors, combining bold visuals with meaningful concepts.",
+                    images: [
+                        "1J.jpg",
+                        "1K.jpg",
+                        "1L.jpg"
+                    ]
+                },
+                {
+                    id: "5",
+                    title: "User-Centric Product Experiences",
+                    description: "I design intuitive and engaging products that blend creativity with functionality to enhance user experiences.",
+                    images: [
+                        "1M.jpg",
+                        "1N.jpg",
+                        "1O.jpg"
+                    ]
+                },
+                {
+                    id: "6",
+                    title: "Showcasing Creativity",
+                    description: "Empowering the future with cutting-edge robotics, AI innovations, and smart technology solutions.",
+                    images: [
+                        "1P.jpg",
+                        "1Q.jpg",
+                        "1R.jpg"
+                    ]
+                },
+                {
+                    id: "7",
+                    title: "Business Ai Website",
+                    description: "Empowering businesses with next-gen AI solutions.Transforming data into intelligent growth and smarter decisions.",
+                    images: [
+                        "1S.jpg",
+                        "1T.jpg",
+                        "1U.jpg"
+                    ]
+                },
+                {
+                    id: "8",
+                    title: "Photography Portfolio",
+                    description: "A minimalist and elegant portfolio site for a photographer, designed to highlight high-resolution images with a smooth gallery. The clean design puts the focus entirely on the artwork.",
+                    images: [
+                        "1W.jpg",
+                        "1X.jpg",
+                        "1V.jpg"
+                    ]
+                },
+
+                {
+                    id: "9",
+                    title: "Charity & NGO Website",
+                    description: "A compassionate and informative website for a non-profit organization, built to encourage donations and highlight their mission. It features sections for their cause, impact, and ways to get involved.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Charity+Homepage",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Our+Mission",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Donation+Form"
+                    ]
+                },
+
+                {
+                    id: "10",
+                    title: "Online Course Platform",
+                    description: "An educational platform with a structured learning path, video players, quizzes, and a user-friendly interface for students. The platform allows for progress tracking and certificates of completion.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Course+Dashboard",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Lesson+Page",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Quiz+Section"
+                    ]
+                },
+
+                {
+                    id: "11",
+                    title: "Real Estate Listing Site",
+                    description: "A detailed real estate website with search filters, interactive maps, and high-quality photo galleries for property listings. The site is optimized for both buyers and sellers.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Property+Listing",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Search+Results+Map",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Agent+Profile"
+                    ]
+                },
+
+                {
+                    id: "12",
+                    title: "Recipe Finder App",
+                    description: "An app that allows users to search for recipes, save favorites, and create shopping lists based on the ingredients they have. The user interface is clean and easy to navigate.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Recipe+Search",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Recipe+Details",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Shopping+List"
+                    ]
+                },
+                
+                {
+                    id: "13",
+                    title: "Music Streaming UI",
+                    description: "A sleek and modern user interface for a music streaming service, with features for playlist management and artist discovery. It includes a dynamic player and personalized recommendations.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Music+Player",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Playlist+View",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Artist+Page"
+                    ]
+                },
+                {
+                    id: "14",
+                    title: "Portfolio Builder",
+                    description: "A simple web app that helps users create their own professional portfolio websites in minutes with customizable templates. It's a great tool for designers and developers to showcase their work.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Template+Selector",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Editor+Screen",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Published+Portfolio"
+                    ]
+                },
+                {
+                    id: "15",
+                    title: "Social Media Platform Clone",
+                    description: "A front-end clone of a popular social media platform to demonstrate proficiency in creating complex, interactive user interfaces. This project focuses on the layout and functionality of the feed, profile, and messaging.",
+                    images: [
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Clone+Homepage",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Profile+View",
+                        "https://placehold.co/800x600/1F2937/9CA3AF?text=Login+Page"
+                    ]
+                }
+            ];
+
+            // Get modal elements
+            const modalOverlay = document.getElementById('project-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDescription = document.getElementById('modal-description');
+            const modalImagesContainer = document.getElementById('modal-images');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+            // Add click event listeners to all project cards
+            document.querySelectorAll('.project-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const projectId = card.dataset.projectId;
+                    showProjectDetails(projectId);
+                });
+            });
+
+            // Function to show project details
+            function showProjectDetails(projectId) {
+                const project = projectsData.find(p => p.id === projectId);
+                if (project) {
+                    // Populate the modal with project data
+                    modalTitle.textContent = project.title;
+                    modalDescription.textContent = project.description;
+                    modalImagesContainer.innerHTML = ''; // Clear previous images
+                    project.images.forEach(imageSrc => {
+                        const img = document.createElement('img');
+                        img.src = imageSrc;
+                        img.alt = project.title + " image";
+                        img.classList.add('w-full', 'h-auto', 'rounded-lg', 'object-cover', 'shadow-lg');
+                        modalImagesContainer.appendChild(img);
+                    });
+                    
+                    modalOverlay.classList.add('open');
+                }
+            }
+
+            // Close modal when close button is clicked
+            modalCloseBtn.addEventListener('click', () => {
+                modalOverlay.classList.remove('open');
+            });
+
+            // Close modal when clicking outside of it
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    modalOverlay.classList.remove('open');
+                }
+            });
+
+            // Logic for animated success popup
+            const successModal = document.getElementById('success-modal');
+            const successMessage = document.getElementById('success-message');
+            const form = document.querySelector('form');
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                // Set message and show popup
+                successMessage.textContent = "Message Sent!";
+                successModal.style.display = 'flex';
+                
+                // Apply animation classes
+                successMessage.classList.add('animate__fadeIn', 'animate__zoomIn');
+
+                // Hide the popup after 3 seconds
+                setTimeout(() => {
+                    // Remove animation classes and hide modal
+                    successMessage.classList.remove('animate__fadeIn', 'animate__zoomIn');
+                    successModal.style.display = 'none';
+                }, 3000);
+            });
+
+            // --- New "Like" button logic ---
+            document.querySelectorAll('.like-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevents the project card from opening the modal
+                    
+                    const isLiked = button.dataset.liked === 'true';
+                    const countSpan = button.nextElementSibling; // Get the next sibling, which is the count span
+                    let currentCount = parseInt(countSpan.dataset.count, 10);
+                    
+                    if (isLiked) {
+                        // User is un-liking
+                        button.classList.remove('liked');
+                        button.dataset.liked = 'false';
+                        currentCount--;
+                    } else {
+                        // User is liking
+                        button.classList.add('liked');
+                        button.dataset.liked = 'true';
+                        currentCount++;
+                    }
+                    
+                    // Update the count and data attribute
+                    countSpan.textContent = currentCount;
+                    countSpan.dataset.count = currentCount;
+                });
+            });
+        };
+    </script>
+</body>
+</html>
